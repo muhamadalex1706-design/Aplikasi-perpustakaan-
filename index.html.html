@@ -1,0 +1,325 @@
+!DOCT<YPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Perpustakaan Buku</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.5);
+        }
+        /* Animasi untuk kartu buku dan modal */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .book-card-enter {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .modal-content-zoom {
+            animation: zoomIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Halaman Login -->
+    <div id="login-page" class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-center text-gray-900">Login Admin</h2>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                    <input id="username" name="username" type="text" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="admin">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input id="password" name="password" type="password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="admin123">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center hidden">Username atau password salah!</p>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Masuk
+                    </button>
+                </div>
+                 <div class="text-center text-sm text-gray-500">
+                    <p>Login sebagai <span class="font-bold">Pengunjung</span>? <a href="#" id="guest-login" class="font-medium text-indigo-600 hover:text-indigo-500">Klik di sini</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Halaman Perpustakaan -->
+    <div id="library-page" class="hidden">
+        <header class="bg-white shadow-md sticky top-0 z-40">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-indigo-600">Perpustakaan Digital</h1>
+                <div class="flex items-center space-x-4">
+                    <p id="welcome-message" class="text-gray-600 hidden sm:block"></p>
+                    <button id="add-book-btn" class="hidden bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">Tambah Buku</button>
+                    <button id="logout-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition duration-300">Keluar</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Search Bar -->
+            <div class="mb-8">
+                <input type="text" id="search-bar" placeholder="Cari buku berdasarkan judul atau penulis..." class="w-full max-w-xl mx-auto block px-5 py-3 border border-gray-300 rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-shadow duration-300">
+            </div>
+
+            <div id="book-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                <!-- Kartu Buku akan dimasukkan di sini -->
+            </div>
+             <p id="no-results" class="hidden text-center text-gray-500 col-span-full">Tidak ada buku yang cocok dengan pencarian Anda.</p>
+        </main>
+    </div>
+
+    <!-- Modal untuk Tambah/Edit Buku -->
+    <div id="book-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true"><div class="absolute inset-0 bg-gray-500 opacity-75"></div></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full modal-content-zoom">
+                <form id="book-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Tambah Buku Baru</h3>
+                        <div class="mt-4 space-y-4">
+                            <input type="hidden" id="book-id">
+                            <div><label for="title" class="block text-sm font-medium text-gray-700">Judul</label><input type="text" id="title" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></div>
+                            <div><label for="author" class="block text-sm font-medium text-gray-700">Penulis</label><input type="text" id="author" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></div>
+                            <div><label for="description" class="block text-sm font-medium text-gray-700">Deskripsi</label><textarea id="description" rows="3" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Deskripsi singkat buku..."></textarea></div>
+                            <div><label for="genre" class="block text-sm font-medium text-gray-700">Genre</label><input type="text" id="genre" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. Novel, Fiksi, Sejarah"></div>
+                            <div><label for="year" class="block text-sm font-medium text-gray-700">Tahun Terbit</label><input type="number" id="year" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></div>
+                            <div><label for="cover" class="block text-sm font-medium text-gray-700">URL Sampul Buku</label><input type="url" id="cover" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"><button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Simpan</button><button type="button" id="cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Batal</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal untuk Detail Buku -->
+    <div id="detail-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true"><div class="absolute inset-0 bg-gray-800 opacity-75"></div></div>
+             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full modal-content-zoom">
+                <div id="detail-content" class="md:flex">
+                    <!-- Konten detail akan diisi oleh JS -->
+                </div>
+                 <div class="bg-gray-50 px-4 py-3 sm:px-6 text-right">
+                    <button type="button" id="close-detail-btn" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elemen DOM
+            const loginPage = document.getElementById('login-page');
+            const libraryPage = document.getElementById('library-page');
+            const loginForm = document.getElementById('login-form');
+            const loginError = document.getElementById('login-error');
+            const guestLoginBtn = document.getElementById('guest-login');
+            
+            const bookList = document.getElementById('book-list');
+            const noResults = document.getElementById('no-results');
+            const addBookBtn = document.getElementById('add-book-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const welcomeMessage = document.getElementById('welcome-message');
+            const searchBar = document.getElementById('search-bar');
+
+            const bookModal = document.getElementById('book-modal');
+            const bookForm = document.getElementById('book-form');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const modalTitle = document.getElementById('modal-title');
+            
+            const detailModal = document.getElementById('detail-modal');
+            const detailContent = document.getElementById('detail-content');
+            const closeDetailBtn = document.getElementById('close-detail-btn');
+            
+            // State Aplikasi
+            let books = [
+                { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', year: 2005, genre: 'Novel', description: 'Sebuah novel inspiratif tentang perjuangan 10 anak di Belitung untuk mendapatkan pendidikan yang layak.', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop' },
+                { id: 2, title: 'Bumi Manusia', author: 'Pramoedya Ananta Toer', year: 1980, genre: 'Sejarah', description: 'Kisah Minke di era kolonial Hindia Belanda, mengeksplorasi tema nasionalisme, cinta, dan ketidakadilan sosial.', cover: 'https://images.unsplash.com/photo-1592496431122-2349e0fbc666?w=500&auto=format&fit=crop' },
+                { id: 3, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', year: 2002, genre: 'Fiksi', description: 'Menggabungkan sejarah, mitos, dan tragedi keluarga, novel ini bercerita tentang kehidupan seorang pelacur dan anak-anaknya.', cover: 'https://images.unsplash.com/photo-1589829085411-b6a2f0a2138a?w=500&auto=format&fit=crop' },
+                { id: 4, title: 'Pulang', author: 'Tere Liye', year: 2015, genre: 'Aksi', description: 'Cerita penuh aksi tentang seorang pemuda dari desa yang masuk ke dalam dunia ekonomi bayangan yang kejam.', cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop' },
+                { id: 5, title: 'Filosofi Teras', author: 'Henry Manampiring', year: 2018, genre: 'Self-Help', description: 'Pengenalan praktis tentang filsafat Stoisisme Yunani-Romawi kuno untuk mengatasi emosi negatif di zaman modern.', cover: 'https://images.unsplash.com/photo-1549122728-f51970943494?w=500&auto=format&fit=crop' },
+            ];
+            let isAdmin = false;
+
+            // --- FUNGSI RENDER ---
+            function renderBooks(bookArray = books) {
+                bookList.innerHTML = '';
+                noResults.classList.toggle('hidden', bookArray.length > 0);
+                
+                bookArray.forEach((book, index) => {
+                    const bookCard = `
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 book-card-enter flex flex-col" style="animation-delay: ${index * 50}ms">
+                            <div class="relative">
+                                <img src="${book.cover}" alt="Sampul ${book.title}" class="w-full h-64 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/300x450/cccccc/333333?text=Gambar+Rusak';">
+                                <span class="absolute top-2 right-2 bg-indigo-500 text-white text-xs font-semibold px-2 py-1 rounded-full">${book.genre}</span>
+                            </div>
+                            <div class="p-4 flex flex-col flex-grow">
+                                <h3 class="text-lg font-bold truncate flex-grow" title="${book.title}">${book.title}</h3>
+                                <p class="text-gray-600 text-sm">${book.author}</p>
+                                <p class="text-gray-500 text-xs mt-1">${book.year}</p>
+                                <div class="mt-4 pt-4 border-t border-gray-100 flex ${isAdmin ? 'justify-between' : 'justify-end'} items-center">
+                                    <button onclick="handleViewDetails(${book.id})" class="text-sm bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-700 transition-colors">Lihat Detail</button>
+                                    ${isAdmin ? `
+                                    <div class="flex space-x-2">
+                                        <button onclick="handleEditBook(${book.id})" class="text-sm bg-yellow-400 text-white px-3 py-1 rounded-md hover:bg-yellow-500 transition-colors">Edit</button>
+                                        <button onclick="handleDeleteBook(${book.id})" class="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition-colors">Hapus</button>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    bookList.innerHTML += bookCard;
+                });
+            }
+
+            // --- FUNGSI UTAMA & EVENT LISTENER ---
+            function showLibrary(userType) {
+                isAdmin = userType === 'admin';
+                loginPage.classList.add('hidden');
+                libraryPage.classList.remove('hidden');
+                welcomeMessage.textContent = isAdmin ? 'Selamat datang, Admin!' : 'Selamat datang, Pengunjung!';
+                addBookBtn.classList.toggle('hidden', !isAdmin);
+                renderBooks();
+            }
+            
+            searchBar.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredBooks = books.filter(book => book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm));
+                renderBooks(filteredBooks);
+            });
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (e.target.username.value === 'admin' && e.target.password.value === 'admin123') showLibrary('admin');
+                else loginError.classList.remove('hidden');
+            });
+            
+            guestLoginBtn.addEventListener('click', (e) => { e.preventDefault(); showLibrary('guest'); });
+
+            logoutBtn.addEventListener('click', () => {
+                isAdmin = false;
+                libraryPage.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                loginForm.reset();
+                searchBar.value = '';
+                loginError.classList.add('hidden');
+            });
+
+            // --- FUNGSI MODAL & CRUD ---
+            function openModal(book = null) {
+                bookForm.reset();
+                if (book) {
+                    modalTitle.textContent = 'Edit Buku';
+                    document.getElementById('book-id').value = book.id;
+                    document.getElementById('title').value = book.title;
+                    document.getElementById('author').value = book.author;
+                    document.getElementById('description').value = book.description;
+                    document.getElementById('genre').value = book.genre;
+                    document.getElementById('year').value = book.year;
+                    document.getElementById('cover').value = book.cover;
+                } else {
+                    modalTitle.textContent = 'Tambah Buku Baru';
+                }
+                bookModal.classList.remove('hidden');
+            }
+
+            function closeModal() { bookModal.classList.add('hidden'); }
+            addBookBtn.addEventListener('click', () => openModal());
+            cancelBtn.addEventListener('click', closeModal);
+
+            bookForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('book-id').value;
+                const newBookData = {
+                    title: document.getElementById('title').value,
+                    author: document.getElementById('author').value,
+                    description: document.getElementById('description').value,
+                    genre: document.getElementById('genre').value,
+                    year: parseInt(document.getElementById('year').value),
+                    cover: document.getElementById('cover').value,
+                };
+
+                if (id) { // Edit mode
+                    const bookIndex = books.findIndex(b => b.id == id);
+                    if(bookIndex > -1) books[bookIndex] = { ...books[bookIndex], ...newBookData };
+                } else { // Add mode
+                    newBookData.id = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+                    books.push(newBookData);
+                }
+                
+                searchBar.value = '';
+                closeModal();
+                renderBooks();
+            });
+
+            // --- FUNGSI GLOBAL UNTUK TOMBOL DI KARTU ---
+            window.handleEditBook = (id) => {
+                const bookToEdit = books.find(b => b.id === id);
+                if (bookToEdit) openModal(bookToEdit);
+            };
+            
+            window.handleViewDetails = (id) => {
+                const book = books.find(b => b.id === id);
+                if (!book) return;
+
+                detailContent.innerHTML = `
+                    <img src="${book.cover}" alt="Sampul ${book.title}" class="w-full md:w-1/3 object-cover rounded-l-lg" onerror="this.onerror=null;this.src='https://placehold.co/300x450/cccccc/333333?text=Gambar+Rusak';">
+                    <div class="p-6 flex flex-col">
+                        <h2 class="text-3xl font-bold mb-2">${book.title}</h2>
+                        <p class="text-lg text-gray-700 mb-1">${book.author}</p>
+                        <p class="text-sm text-gray-500 mb-4">${book.year} &bull; <span class="font-semibold">${book.genre}</span></p>
+                        <p class="text-gray-600 leading-relaxed">${book.description}</p>
+                    </div>
+                `;
+                detailModal.classList.remove('hidden');
+            }
+            closeDetailBtn.addEventListener('click', () => detailModal.classList.add('hidden'));
+
+            window.handleDeleteBook = (id) => {
+                const confirmation = document.createElement('div');
+                confirmation.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+                confirmation.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-xl text-center modal-content-zoom">
+                        <p class="font-bold text-lg mb-4">Anda yakin ingin menghapus buku ini?</p>
+                        <div>
+                            <button class="confirm-delete bg-red-500 text-white px-4 py-2 rounded-md text-sm mr-2 hover:bg-red-600 transition-colors">Ya, Hapus</button>
+                            <button class="cancel-delete bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm hover:bg-gray-400 transition-colors">Batal</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(confirmation);
+
+                confirmation.querySelector('.confirm-delete').onclick = () => {
+                    books = books.filter(b => b.id !== id);
+                    searchBar.value = '';
+                    renderBooks();
+                    confirmation.remove();
+                };
+                confirmation.querySelector('.cancel-delete').onclick = () => confirmation.remove();
+            };
+        });
+    </script>
+
+</body>
+</html>
